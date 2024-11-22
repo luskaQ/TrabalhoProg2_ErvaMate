@@ -1,6 +1,7 @@
 #include <iostream>
 #include <limits>
 #include <iomanip>
+#include <sstream>
 #define TAM 100
 using namespace std;
 
@@ -36,7 +37,7 @@ bool cin_verifica_bool(string msg)
     bool loop_in = true;
     while (loop_in)
     {
-        cin >> aux;
+        getline(cin, aux);
         aux = formatacao(aux);
         if (aux == "SIM" || aux == "NAO")
         {
@@ -61,19 +62,21 @@ int cin_verifica_int_intervalo(string msg, int min, int max)
 {
     bool loop_in = true;
     int escolha;
+    string texto;
+
     while (loop_in)
     {
-        cin >> escolha;
+        getline(cin, texto);
 
-        if (cin.fail() || (escolha < min || escolha > max))
-        {
-            cout << msg;
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // limpa todo o buffer, ate encontrar a quebra de linha "enter"
+        stringstream ss(texto); 
+
+        if (ss >> escolha && ss.eof() && (escolha >= min && escolha <= max)) 
+        {                             
+            loop_in = false;
         }
         else
         {
-            loop_in = false;
+            cout << msg;
         }
     }
     return escolha;
@@ -82,19 +85,22 @@ int cin_verifica_int(string msg)
 {
     bool loop_in = true;
     int escolha;
+    string texto;
+
     while (loop_in)
     {
-        cin >> escolha;
+        getline(cin, texto);
 
-        if (cin.fail())
-        {
-            cout << msg;
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // limpa todo o buffer, ate encontrar a quebra de linha "enter"
+        stringstream ss(texto); // tranforma a string em um fluxo de string (string stream), parecido com o cin
+
+        if (ss >> escolha && ss.eof()) // ss >> extrai os numeros de texto e ss.eof() verifica se nao existem mais carcteres apos os numeros (se a string acabou)
+        {                              // tento atribuir ss (var do tipo stringstream), a escolha
+            loop_in = false;
+            // caso as condiçoes sejam aceitas, a entrada eh retornada
         }
         else
         {
-            loop_in = false;
+            cout << msg;
         }
     }
     return escolha;
@@ -103,23 +109,26 @@ int cin_verifica_int(string msg)
 float cin_verifica_float(string msg)
 {
     bool loop_in = true;
-    float num;
+    float escolha;
+    string texto;
+
     while (loop_in)
     {
-        cin >> num;
+        getline(cin, texto);
 
-        if (cin.fail() || num < 0)
-        {
-            cout << msg;
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // limpa todo o buffer, ate encontrar a quebra de linha "enter"
+        stringstream ss(texto); // tranforma a string em um fluxo de string (string stream), parecido com o cin
+
+        if (ss >> escolha && ss.eof() && (escolha > 0)) // ss >> extrai os numeros de texto e ss.eof() verifica se nao existem mais carcteres apos os numeros (se a string acabou)
+        {                              // tento atribuir ss (var do tipo stringstream), a escolha
+            loop_in = false;
+            // caso as condiçoes sejam aceitas, a entrada eh
         }
         else
         {
-            loop_in = false;
+            cout << msg;
         }
     }
-    return num;
+    return escolha;
 }
 
 string cin_data()
@@ -298,7 +307,6 @@ int binarySearch_primeira_ocorrencia_nome(entrega *vetor, int inicio, int fim, s
 
 void cin_carga(entrega *vetor)
 {
-    cin.ignore();
     cout << "Digite o nome do entregador: ";
     getline(cin, (*(vetor + pnt_auxiliar_entradas)).nome);
     (*(vetor + pnt_auxiliar_entradas)).nome = formatacao((*(vetor + pnt_auxiliar_entradas)).nome);
@@ -405,42 +413,57 @@ int main()
                 cin_carga(cargas_erva_mate);
                 break;
             case 2: // Procura por entrega por dia
-                cout << "Digite a data que voce quer procurar por entregas." << endl;
-                quick_sort_dia(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1);
-                alvo = cin_data();
-                cout << endl;
-                first = binarySearch_primeira_ocorrencia_data(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
-                last = binarySearch_ultima_ocorrencia_data(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
-                if (first == -1 || last == -1)
+                if (pnt_auxiliar_entradas > 0)
                 {
-                    cout << "Nenhuma entrega encontrada para a data especificada." << endl;
+                    cout << "Digite a data que voce quer procurar por entregas." << endl;
+                    quick_sort_dia(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1);
+                    alvo = cin_data();
+                    cout << endl;
+                    first = binarySearch_primeira_ocorrencia_data(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
+                    last = binarySearch_ultima_ocorrencia_data(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
+                    if (first == -1 || last == -1)
+                    {
+                        cout << "Nenhuma entrega encontrada para a data especificada." << endl;
+                    }
+                    else
+                    {
+                        cout << "Entrega(s) no dia " << alvo << ":" << endl;
+                        cout_cargas(cargas_erva_mate, first, last + 1);
+                    }
                 }
                 else
                 {
-                    cout << "Entrega(s) no dia " << alvo << ":" << endl;
-                    cout_cargas(cargas_erva_mate, first, last + 1);
+                    cout << "Nao ha entragas para procurar!" << endl;
                 }
                 system("pause");
                 break;
             case 3: // procura por entrega por nome
-                cout << "Digite o nome que voce quer procurar por entregas: ";
-                quick_sort_nome(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1);
-                cin.ignore();
-                getline(cin, alvo);
-                alvo = formatacao(alvo);
-                cout << endl;
-                first = binarySearch_primeira_ocorrencia_nome(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
-                last = binarySearch_ultima_ocorrencia_nome(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
-                if (first == -1 || last == -1)
+                if (pnt_auxiliar_entradas > 0)
                 {
-                    cout << "Nenhuma entrega encontrada para o nome especificado." << endl;
+                    cout << "Digite o nome que voce quer procurar por entregas: ";
+                    quick_sort_nome(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1);
+                    cin.ignore();
+                    getline(cin, alvo);
+                    alvo = formatacao(alvo);
+                    cout << endl;
+                    first = binarySearch_primeira_ocorrencia_nome(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
+                    last = binarySearch_ultima_ocorrencia_nome(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
+                    if (first == -1 || last == -1)
+                    {
+                        cout << "Nenhuma entrega encontrada para o nome especificado." << endl;
+                    }
+                    else
+                    {
+                        cout << "Entrega(s) de " << alvo << ": " << endl;
+                        cout_cargas(cargas_erva_mate, first, last + 1);
+                    }
                 }
                 else
                 {
-                    cout << "Entrega(s) de " << alvo << ": " << endl;
-                    cout_cargas(cargas_erva_mate, first, last + 1);
+                    cout << "Nao ha entragas para procurar!" << endl;
                 }
                 system("pause");
+
                 break;
             case 4: // listagem de todas as entregas;
                 cout << endl;
