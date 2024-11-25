@@ -2,7 +2,9 @@
 #include <limits>
 #include <iomanip>
 #include <sstream>
-#define TAM 100
+#include <assert.h>
+#include <fstream>
+#define TAM 1000
 using namespace std;
 
 int pnt_auxiliar_entradas = 0;
@@ -68,10 +70,10 @@ int cin_verifica_int_intervalo(string msg, int min, int max)
     {
         getline(cin, texto);
 
-        stringstream ss(texto); 
+        stringstream ss(texto);
 
-        if (ss >> escolha && ss.eof() && (escolha >= min && escolha <= max)) 
-        {                             
+        if (ss >> escolha && ss.eof() && (escolha >= min && escolha <= max))
+        {
             loop_in = false;
         }
         else
@@ -116,10 +118,10 @@ float cin_verifica_float(string msg)
     {
         getline(cin, texto);
 
-        stringstream ss(texto); // tranforma a string em um fluxo de string (string stream), parecido com o cin
+        stringstream ss(texto); // tranforma a string em um fluxo de string (string stream), parecido com o  fluxo da iostream cin
 
         if (ss >> escolha && ss.eof() && (escolha > 0)) // ss >> extrai os numeros de texto e ss.eof() verifica se nao existem mais carcteres apos os numeros (se a string acabou)
-        {                              // tento atribuir ss (var do tipo stringstream), a escolha
+        {                                               // tento atribuir ss (var do tipo stringstream), a  variavel escolha
             loop_in = false;
             // caso as condiçoes sejam aceitas, a entrada eh
         }
@@ -390,15 +392,81 @@ void cout_cabecalho()
     cout << endl;
     cout << "Digite aqui a opcao escolhida: ";
 }
+
+void carrega_csv(entrega *vetor, int capacidade_max)
+{
+    int i = 0;
+    ifstream arquivo("entregas.csv");
+    if (!arquivo.is_open())
+    {
+        cout << "Erro ao abrir o arquivo!" << endl;
+        return;
+    }
+    string linha;
+    getline(arquivo, linha);
+    string campo;
+    while (getline(arquivo, linha) && i < capacidade_max) // do arquivo eu retiro uma linha, cada vez que é chamado o getline, le nova linha
+    {                                                     // pois a cada chamada o ponteiro do arquivo vai para a proxima linha da planilha
+        istringstream stream(linha); // estou transformando a linha da planilha em um fluxo de entrada de string
+        getline(stream, vetor[i].data, ',');
+        getline(stream, vetor[i].nome, ','); //De modo semelhante, o getline() vai ler ate a virgula, avançando o ponteiro de leitura para essa virgula
+
+        getline(stream, campo, ',');
+        vetor[i].nativa = (campo == "SIM" ? true : false);
+        getline(stream, campo, ',');
+        vetor[i].peso = stof(campo);
+        getline(stream, campo);
+        vetor[i].totalValue = stof(campo); // codigo vai ler o arquivo.csv e atribuir linhas a indices do vetor de entregas
+
+        i++;
+    }
+    pnt_auxiliar_entradas = i; // no fim o pnt_auxiliar deve receber quantas entradas ocorreram + 1, para que o codigo funcione
+    arquivo.close();
+}
+
+string formata_float(float num, int precisao)
+{
+    ostringstream aux;
+    aux << fixed << setprecision(precisao) << num;
+    return aux.str();
+}
+
+void salva_csv(entrega *vetor, int capacidade_max)
+{
+    ofstream arquivo("entregas.csv");
+    if (!arquivo.is_open())
+    {
+        cout << "Erro ao abrir o arquivo!" << endl;
+        return;
+    }
+
+    arquivo << "Data,Nome,Nativa,Peso,TotalValue\n";
+    for (int i = 0; i < capacidade_max; i++)
+    {
+        arquivo << vetor[i].data << ","
+                << vetor[i].nome << ","
+                << (vetor[i].nativa ? "SIM" : "NAO") << ","
+                << formata_float(vetor[i].peso, 5) << ","
+                << formata_float(vetor[i].totalValue, 5) << "\n"; // linha do arquivo.csv vai receber/ler todas essas informações
+    }
+    arquivo.close();
+    cout << "Dados salvos! " << endl;
+}
+
 int main()
 {
     int opcao, opcao2, first, last, aux;
-    preco_erva_nativa = 11.2;
-    preco_erva_plantada = 9.2;
-
+    preco_erva_nativa = 1.46;
+    preco_erva_plantada = 1.26;
+    assert(formatacao("teste teste123") == "TESTE TESTE123");
+    assert(pnt_auxiliar_entradas == 0); // verifica se o programa esta começando com o valor de pnt auxiliar de entradas igual a 0, caso nao esteja, termina a execuçao
     entrega *cargas_erva_mate = cria_entregas();
+    assert(cargas_erva_mate != nullptr);
     bool keep_going = true;
     string alvo;
+
+    carrega_csv(cargas_erva_mate, TAM);
+
     if (cargas_erva_mate != nullptr)
     {
         while (keep_going)
@@ -442,12 +510,13 @@ int main()
                 {
                     cout << "Digite o nome que voce quer procurar por entregas: ";
                     quick_sort_nome(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1);
-                    cin.ignore();
                     getline(cin, alvo);
                     alvo = formatacao(alvo);
+                    cout << alvo << endl;
                     cout << endl;
                     first = binarySearch_primeira_ocorrencia_nome(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
                     last = binarySearch_ultima_ocorrencia_nome(cargas_erva_mate, 0, pnt_auxiliar_entradas - 1, alvo);
+                    cout << first << " " << last << endl;
                     if (first == -1 || last == -1)
                     {
                         cout << "Nenhuma entrega encontrada para o nome especificado." << endl;
@@ -497,12 +566,12 @@ int main()
                 if (opcao2 == 1)
                 {
                     cout << "Digite o valor atualizado da erva nativa por kg: ";
-                    preco_erva_nativa = cin_verifica_float("Valor invalido");
+                    preco_erva_nativa = cin_verifica_float("Valor invalido: ");
                 }
                 else
                 {
                     cout << "Digite o valor atualizado da erva plantada por kg: ";
-                    preco_erva_plantada = cin_verifica_float("Valor invalido");
+                    preco_erva_plantada = cin_verifica_float("Valor invalido: ");
                 }
                 cout << "Valor atualizado!" << endl;
                 system("pause");
@@ -517,6 +586,7 @@ int main()
             }
         }
     }
+    salva_csv(cargas_erva_mate, pnt_auxiliar_entradas);
     delete[] cargas_erva_mate;
     cargas_erva_mate = nullptr;
     return 0;
